@@ -28,7 +28,7 @@
     "@types/pg": "^8.15.2",
     "prisma": "^5.22.0",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3"
   },
   "overrides": {
     "uuid": "^11.1.1"
