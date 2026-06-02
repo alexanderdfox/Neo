@@ -37,7 +37,7 @@ jobs:
         run: node scripts/license-compliance.mjs
 
       - name: Upload notice artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: third-party-notices
           path: docs/THIRD_PARTY_NOTICES.md
