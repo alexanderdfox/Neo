@@ -1,0 +1,14 @@
+# Horizontal scale: stateless API behind nginx.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.scale.yml \
+#     --profile scale up --build --scale api=3
+#
+# Hit http://localhost:3000 — gateway load-balances across replicas.
+
+services:
+  api:
+    # No host port per replica; only gateway exposes 3000
+    ports: []
+
+  gateway:
+    profiles: []  # always on when this file is merged

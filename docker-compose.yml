@@ -1,0 +1,84 @@
+# Phase 0: single-node data plane + connection pooling + cache.
+# Scale API horizontally: docker compose -f docker-compose.yml -f docker-compose.scale.yml up --scale api=3
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-neo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-neo_dev_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-neo}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-primary.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-neo} -d ${POSTGRES_DB:-neo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-neo}:${POSTGRES_PASSWORD:-neo_dev_change_me}@postgres:5432/${POSTGRES_DB:-neo}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "6432:6432"
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-neo}:${POSTGRES_PASSWORD:-neo_dev_change_me}@pgbouncer:6432/${POSTGRES_DB:-neo}?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Reverse proxy in front of N API replicas (enabled via docker-compose.scale.yml)
+  gateway:
+    image: nginx:1.27-alpine
+    profiles: ["scale"]
+    volumes:
+      - ./infra/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    ports:
+      - "${API_PORT:-3000}:80"
+
+volumes:
+  postgres_data:
+  redis_data:
