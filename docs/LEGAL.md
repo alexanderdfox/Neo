@@ -37,6 +37,16 @@ This project is set up to be legally clean by default, but no software can be gu
 - Fail build on known high/critical vulnerabilities.
 - Require THIRD_PARTY_NOTICES updates when dependency lockfiles change.
 
+## Implemented in this repo
+
+- Workflow: `.github/workflows/license-compliance.yml`
+- Policy/generator script: `scripts/license-compliance.mjs`
+- Output file: `docs/THIRD_PARTY_NOTICES.md`
+
+The workflow installs dependencies for `apps/api` and `apps/web`, runs the
+license policy, fails on disallowed licenses, and refreshes
+`docs/THIRD_PARTY_NOTICES.md`.
+
 ## Important note
 
 This checklist is engineering guidance, not legal advice.

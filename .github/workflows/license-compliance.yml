@@ -1,0 +1,51 @@
+name: License Compliance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install API dependencies
+        run: npm install
+        working-directory: apps/api
+
+      - name: Install Web dependencies
+        run: npm install
+        working-directory: apps/web
+
+      - name: Run license policy and generate notices
+        env:
+          DISALLOWED_LICENSE_PATTERNS: GPL,AGPL,SSPL,Commons Clause,BUSL,UNLICENSED,UNKNOWN
+        run: node scripts/license-compliance.mjs
+
+      - name: Upload notice artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-party-notices
+          path: docs/THIRD_PARTY_NOTICES.md
+
+      - name: Commit updated notices on main
+        if: github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: refresh third-party notices"
+          file_pattern: docs/THIRD_PARTY_NOTICES.md
+

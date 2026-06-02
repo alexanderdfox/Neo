@@ -61,6 +61,7 @@ See [docs/SCALING.md](docs/SCALING.md) for the full playbook (read replicas, wor
 - License: BSD 3-Clause (`LICENSE`)
 - Compliance baseline: [docs/LEGAL.md](docs/LEGAL.md)
 - Third-party attribution tracker: [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
+- Automated license scanner: `.github/workflows/license-compliance.yml`
 
 ## Oracle vs Neo (this repo)
 
