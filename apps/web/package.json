@@ -17,6 +17,6 @@
     "@vitejs/plugin-react-swc": "^4.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.0.0"
-  }
+  },
+  "license": "BSD-3-Clause"
 }
-
