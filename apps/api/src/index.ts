@@ -4,6 +4,7 @@ import { httpInstrumentationMiddleware } from "@hono/otel";
 import Redis from "ioredis";
 import pg from "pg";
 import { otelSdk } from "./otel";
+import { adminUiHtml } from "./admin-ui";
 
 const { Pool } = pg;
 
@@ -17,6 +18,44 @@ const redis = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
 const instanceId =
   process.env.HOSTNAME ?? process.env.INSTANCE_ID ?? `local-${process.pid}`;
 
+type SettingsMap = Record<string, unknown>;
+
+const SETTINGS_CACHE_KEY = "neo:settings:all";
+const defaultSettings: SettingsMap = {
+  theme: "dark",
+  rateLimitPerMinute: 600,
+  maintenanceMode: false,
+  welcomeMessage: "Welcome to Neo. Oracle is optional.",
+};
+
+async function readPersistedSettings(): Promise<SettingsMap> {
+  const cached = await redis.get(SETTINGS_CACHE_KEY);
+  if (cached) {
+    return JSON.parse(cached) as SettingsMap;
+  }
+
+  const { rows } = await pool.query<{ key: string; value: unknown }>(
+    "SELECT key, value FROM app_settings"
+  );
+  const out: SettingsMap = {};
+  for (const row of rows) {
+    out[row.key] = row.value;
+  }
+  await redis.set(SETTINGS_CACHE_KEY, JSON.stringify(out), "EX", 60);
+  return out;
+}
+
+async function writeSetting(key: string, value: unknown) {
+  await pool.query(
+    `INSERT INTO app_settings (key, value, updated_at)
+     VALUES ($1, $2::jsonb, now())
+     ON CONFLICT (key)
+     DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+    [key, JSON.stringify(value)]
+  );
+  await redis.del(SETTINGS_CACHE_KEY);
+}
+
 app.use(
   "*",
   httpInstrumentationMiddleware({
@@ -26,6 +65,9 @@ app.use(
     captureResponseHeaders: [],
   })
 );
+
+app.get("/", (c) => c.redirect("/admin"));
+app.get("/admin", (c) => c.html(adminUiHtml));
 
 app.get("/health", (c) =>
   c.json({ ok: true, instance: instanceId, ts: new Date().toISOString() })
@@ -61,6 +103,43 @@ app.get("/scale/stats", async (c) => {
     redisPingCount: count ? Number(count) : 0,
     postgresEventCount: Number(rows[0]?.n ?? 0),
   });
+});
+
+app.get("/api/settings", async (c) => {
+  const persisted = await readPersistedSettings();
+  return c.json({ ...defaultSettings, ...persisted, instance: instanceId });
+});
+
+app.get("/api/settings/:key", async (c) => {
+  const key = c.req.param("key");
+  const persisted = await readPersistedSettings();
+  const value = persisted[key] ?? defaultSettings[key];
+  if (value === undefined) {
+    return c.json({ error: "unknown setting key" }, 404);
+  }
+  return c.json({ key, value, instance: instanceId });
+});
+
+app.put("/api/settings/:key", async (c) => {
+  const key = c.req.param("key");
+  const body = await c.req.json<{ value?: unknown }>().catch(() => ({}));
+  if (!Object.prototype.hasOwnProperty.call(defaultSettings, key)) {
+    return c.json({ error: "unsupported setting key" }, 400);
+  }
+  if (!Object.prototype.hasOwnProperty.call(body, "value")) {
+    return c.json({ error: "body.value required" }, 400);
+  }
+  await writeSetting(key, body.value);
+  return c.json({ ok: true, key, value: body.value, instance: instanceId });
+});
+
+app.post("/api/settings/apply", async (c) => {
+  const active = { ...defaultSettings, ...(await readPersistedSettings()) };
+  await pool.query(
+    "INSERT INTO app_events (kind, payload) VALUES ($1, $2::jsonb)",
+    ["settings.applied", JSON.stringify({ instance: instanceId, active })]
+  );
+  return c.json({ ok: true, active, instance: instanceId });
 });
 
 const port = Number(process.env.PORT ?? 3000);

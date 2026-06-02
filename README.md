@@ -10,6 +10,7 @@ docker compose up --build
 ```
 
 - API: http://localhost:3000/health
+- Admin UI: http://localhost:3000/admin
 - Postgres (direct): `localhost:5432`
 - PgBouncer: `localhost:6432`
 - Redis: `localhost:6379`
@@ -28,6 +29,16 @@ For CI / production, use:
 
 ```bash
 npx prisma migrate deploy
+```
+
+## Web UI (React)
+
+For a richer frontend separate from the API:
+
+```bash
+cd apps/web
+npm install
+npm run dev   # http://localhost:5173 (proxies /api to :3000)
 ```
 
 ## Scale the API (Phase 1)

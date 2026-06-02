@@ -11,3 +11,9 @@ CREATE TABLE IF NOT EXISTS app_events (
 
 CREATE INDEX IF NOT EXISTS app_events_kind_created_at_idx
   ON app_events (kind, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key        TEXT PRIMARY KEY,
+  value      JSONB NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

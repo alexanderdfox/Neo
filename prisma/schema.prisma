@@ -17,3 +17,11 @@ model AppEvent {
   @@index([kind, createdAt(sort: Desc)])
 }
 
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@map("app_settings")
+}
+
