@@ -2,6 +2,7 @@
   "name": "@neo/web",
   "private": true,
   "version": "0.1.0",
+  "license": "BSD-3-Clause",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,6 +18,5 @@
     "@vitejs/plugin-react-swc": "^4.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.0.0"
-  },
-  "license": "BSD-3-Clause"
+  }
 }
