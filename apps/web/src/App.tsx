@@ -16,7 +16,10 @@ const defaultSettings: Settings = {
 };
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const token = (localStorage.getItem("neo_admin_token") ?? "").trim();
+  const res = await fetch(path, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
@@ -25,6 +28,11 @@ export function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState<string>("Loading settings...");
   const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState<string>("");
+
+  useEffect(() => {
+    setToken(localStorage.getItem("neo_admin_token") ?? "");
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -54,9 +62,13 @@ export function App() {
         ["welcomeMessage", settings.welcomeMessage],
       ];
       for (const [key, value] of entries) {
+        const authToken = (localStorage.getItem("neo_admin_token") ?? "").trim();
         const res = await fetch(`/api/settings/${key}`, {
           method: "PUT",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
           body: JSON.stringify({ value }),
         });
         if (!res.ok) throw new Error(`Failed to save ${key}`);
@@ -127,6 +139,21 @@ export function App() {
         <div className="pill">instance: {settings.instance ?? "unknown"}</div>
       </div>
       <div className="grid">
+        <div className="card">
+          <div className="label">Security</div>
+          <div className="title">Admin Token</div>
+          <p className="muted">Required in production. Stored locally in your browser.</p>
+          <input
+            type="password"
+            value={token}
+            onChange={(e) => {
+              const next = e.target.value;
+              setToken(next);
+              localStorage.setItem("neo_admin_token", next);
+            }}
+            placeholder="Paste ADMIN_TOKEN"
+          />
+        </div>
         <div className="card">
           <div className="label">Theme</div>
           <div className="title">Dashboard Theme</div>

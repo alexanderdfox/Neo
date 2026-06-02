@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/neo-logo.svg" alt="Neo logo" width="900" />
+</p>
+
 # Neo
 
 Modern, horizontally scalable core — the opposite of Oracle RAC theater: **stateless apps, pooled Postgres, Redis, scale out when load demands it.**
@@ -62,6 +66,13 @@ See [docs/SCALING.md](docs/SCALING.md) for the full playbook (read replicas, wor
 - Compliance baseline: [docs/LEGAL.md](docs/LEGAL.md)
 - Third-party attribution tracker: [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
 - Automated license scanner: `.github/workflows/license-compliance.yml`
+
+## Security
+
+- Security baseline and production checklist: [docs/SECURITY.md](docs/SECURITY.md)
+- Set `ADMIN_TOKEN` for admin/settings API access in production.
+- Set `CORS_ORIGIN` to your trusted frontend origin.
+- Automated security workflows: `.github/workflows/security-ci.yml`
 
 ## Oracle vs Neo (this repo)
 

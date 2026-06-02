@@ -64,6 +64,13 @@ export const adminUiHtml = `<!doctype html>
       border: 1px solid #1e293b; background: rgba(2, 6, 23, .8); color: #cbd5e1;
       min-height: 38px;
     }
+    .security {
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: rgba(15, 23, 42, .75);
+    }
     code { color: #a5f3fc; }
   </style>
 </head>
@@ -75,6 +82,12 @@ export const adminUiHtml = `<!doctype html>
         <div class="sub">Change settings instantly. No Oracle forms. No change board.</div>
       </div>
       <div class="pill" id="instancePill">instance: loading...</div>
+    </div>
+    <div class="security">
+      <div class="label">Security</div>
+      <div class="title">Admin Token</div>
+      <div class="muted">Enter your API admin token. The UI stores it in localStorage for this browser.</div>
+      <input id="adminToken" type="password" placeholder="Paste ADMIN_TOKEN here" />
     </div>
     <div class="grid">
       <div class="card">
@@ -118,9 +131,20 @@ export const adminUiHtml = `<!doctype html>
   <script>
     const statusEl = document.getElementById("status");
     const setStatus = (msg) => { statusEl.textContent = msg; };
+    const tokenEl = document.getElementById("adminToken");
+    tokenEl.value = localStorage.getItem("neo_admin_token") ?? "";
+    tokenEl.addEventListener("change", () => {
+      localStorage.setItem("neo_admin_token", tokenEl.value.trim());
+    });
+
+    function authHeaders(extra = {}) {
+      const token = (tokenEl.value || "").trim();
+      if (!token) return extra;
+      return { ...extra, authorization: "Bearer " + token };
+    }
 
     async function readSettings() {
-      const res = await fetch("/api/settings");
+      const res = await fetch("/api/settings", { headers: authHeaders() });
       if (!res.ok) throw new Error("Failed to load settings");
       return res.json();
     }
@@ -143,7 +167,7 @@ export const adminUiHtml = `<!doctype html>
       for (const [key, value] of Object.entries(payload)) {
         const res = await fetch("/api/settings/" + encodeURIComponent(key), {
           method: "PUT",
-          headers: { "content-type": "application/json" },
+          headers: authHeaders({ "content-type": "application/json" }),
           body: JSON.stringify({ value })
         });
         if (!res.ok) throw new Error("Failed to save " + key);
@@ -152,7 +176,10 @@ export const adminUiHtml = `<!doctype html>
     }
 
     async function applyAndSmoke() {
-      const applyRes = await fetch("/api/settings/apply", { method: "POST" });
+      const applyRes = await fetch("/api/settings/apply", {
+        method: "POST",
+        headers: authHeaders()
+      });
       if (!applyRes.ok) throw new Error("Failed to apply settings");
       const apply = await applyRes.json();
       const pingRes = await fetch("/scale/ping", { method: "POST" });
