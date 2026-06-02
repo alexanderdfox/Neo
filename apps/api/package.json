@@ -24,7 +24,7 @@
     "pg": "^8.16.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21",
+    "@types/node": "^25.9.1",
     "@types/pg": "^8.15.2",
     "prisma": "^5.22.0",
     "tsx": "^4.19.4",
