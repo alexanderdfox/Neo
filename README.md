@@ -56,6 +56,12 @@ curl -s http://localhost:3000/scale/stats
 
 See [docs/SCALING.md](docs/SCALING.md) for the full playbook (read replicas, workers, K8s).
 
+## Legal
+
+- License: BSD 3-Clause (`LICENSE`)
+- Compliance baseline: [docs/LEGAL.md](docs/LEGAL.md)
+- Third-party attribution tracker: [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)
+
 ## Oracle vs Neo (this repo)
 
 | Oracle reflex | Neo |
